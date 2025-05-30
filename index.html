@@ -43,18 +43,7 @@ function generateBandLotEntry(tick) {
   expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
   const entry = {
-    EntryID: `BND${tick}_2024`,
-    BandLotID: `BND${tick}`,
-    MaterialDescription: "AutoGen Material - Sodium Sulphate",
-    InitialQuantity: Math.floor(Math.random() * 900) + 100,
-    Unit: "Kgs",
-    RemainingQuantity: 0,
-    CountryOfOrigin: "CountryX",
-    BillOfLadingNumber: `BOL${tick}`,
-    DateOfEntry: entryDate.toISOString().split("T")[0],
-    CalculatedExpiryDate: expiryDate.toISOString().split("T")[0],
-    DaysRemaining: Math.round((expiryDate - new Date()) / (1000 * 60 * 60 * 24)),
-    CustomsDutyValue: Math.floor(Math.random() * 1000000),
+    
     Status: "In Bonded Warehouse"
   };
 
