@@ -1,110 +1,31 @@
-
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <title>Bonded Warehouse Simulation</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f8f8f8; margin: 20px; }
-    h1 { color: #333; }
-    button { margin-right: 10px; padding: 10px 15px; font-size: 16px; }
-    #simulation .entry {
-      background: #fff;
-      margin: 10px 0;
-      padding: 10px;
-      border-left: 5px solid #007bff;
-    }
-    #simulation .expired {
-      border-left-color: red;
-    }
-  </style>
-</head>
+<head><title>Test Bond Logger</title></head>
 <body>
+  <h1>Test Event Logger</h1>
+  <button onclick="sendTest()">Send Test Event</button>
+  <div id="status"></div>
 
-<h1>Bonded Warehouse Simulation</h1>
-<p>Each second = 2 weeks. Simulation runs for 1.5 years (39 steps).</p>
+  <script>
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbykRJqzZrzzsOUtL9QBuHnfHEmFWawUvx2uom23ZK98WeEvmJMpM3GYp1Dvl7QnvQs9NQ/exec';
 
-<button onclick="startSim()">Start Simulation</button>
-<button onclick="pauseSim()">Pause</button>
-<button onclick="resetSim()">Reset</button>
+    function sendTest() {
+      const payload = {
+        activityName: 'Test Event',
+        itemId: 'TEST123',
+        actor: 'Tester',
+        source: 'HTMLSim'
+      };
 
-<div id="simulation"></div>
-
-<script>
-let simInterval;
-let currentTick = 0;
-const maxTicks = 39;
-
-const SCRIPT_URL = "ttps://script.google.com/macros/s/AKfycbxjx6lUMZ9M_AXlpKqsvYH7G6IFsZzvcsXVtSqUpRZMJ62Oa8yCk1yPP5jVVhOvoBqF/exec";
-
-function generateBandLotEntry(tick) {
-  const entryDate = new Date(Date.now() + tick * 14 * 24 * 60 * 60 * 1000);
-  const expiryDate = new Date(entryDate);
-  expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-
-  const entry = {
-    
-    Status: "In Bonded Warehouse"
-  };
-
-  entry.RemainingQuantity = entry.InitialQuantity;
-  return entry;
-}
-
-function postEntryToSheet(entry) {
-  fetch(SCRIPT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(entry)
-  })
-  .then(response => response.text())
-  .then(result => console.log("✅ Entry posted:", result))
-  .catch(error => console.error("❌ Fetch error:", error));
-}
-
-function startSim() {
-  simInterval = setInterval(() => {
-    if (currentTick >= maxTicks) {
-      clearInterval(simInterval);
-      console.log("✅ Simulation complete.");
-      return;
+      fetch(WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(response => response.text())
+      .then(result => document.getElementById('status').innerText = "✅ Success: " + result)
+      .catch(error => document.getElementById('status').innerText = "❌ Error: " + error);
     }
-
-    const entry = generateBandLotEntry(currentTick);
-    displayEntry(entry);
-    postEntryToSheet(entry);
-    currentTick++;
-  }, 1000);
-}
-
-function pauseSim() {
-  clearInterval(simInterval);
-  console.log("⏸️ Simulation paused.");
-}
-
-function resetSim() {
-  pauseSim();
-  currentTick = 0;
-  document.getElementById("simulation").innerHTML = "";
-  console.log("🔄 Simulation reset.");
-}
-
-function displayEntry(entry) {
-  const container = document.getElementById("simulation");
-  const div = document.createElement("div");
-  div.className = "entry" + (entry.DaysRemaining <= 30 ? " expired" : "");
-  div.innerHTML = `
-    <strong>${entry.BandLotID}</strong><br>
-    Material: ${entry.MaterialDescription}<br>
-    Quantity: ${entry.InitialQuantity} ${entry.Unit}<br>
-    Days Remaining: ${entry.DaysRemaining}<br>
-    Status: ${entry.Status}
-  `;
-  container.appendChild(div);
-}
-</script>
-
+  </script>
 </body>
 </html>
