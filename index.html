@@ -1,90 +1,122 @@
+
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Bonded Warehouse Simulation</title>
   <style>
-    body { font-family: Arial; background: #f4f4f4; margin: 0; padding: 20px; }
-    #simulation { margin-top: 20px; }
-    .entry { margin: 10px 0; padding: 10px; background: #fff; border-left: 5px solid #007bff; }
-    .expired { border-left-color: red; }
+    body { font-family: Arial, sans-serif; background: #f8f8f8; margin: 20px; }
+    h1 { color: #333; }
+    button { margin-right: 10px; padding: 10px 15px; font-size: 16px; }
+    #simulation .entry {
+      background: #fff;
+      margin: 10px 0;
+      padding: 10px;
+      border-left: 5px solid #007bff;
+    }
+    #simulation .expired {
+      border-left-color: red;
+    }
   </style>
 </head>
 <body>
-  <h1>Bonded Warehouse Simulation</h1>
-  <p>Each second represents 2 weeks. Total simulated time: 1.5 years.</p>
-  <button onclick="startSim()">Start Simulation</button>
-  <button onclick="pauseSim()">Pause</button>
-  <button onclick="resetSim()">Reset</button>
 
-  <div id="simulation"></div>
+<h1>Bonded Warehouse Simulation</h1>
+<p>Each second = 2 weeks. Simulation runs for 1.5 years (39 steps).</p>
 
-  <script>
-    let simInterval;
-    let currentTick = 0;
-    const maxTicks = 39; // 1.5 years = 78 weeks / 2 weeks per second
+<button onclick="startSim()">Start Simulation</button>
+<button onclick="pauseSim()">Pause</button>
+<button onclick="resetSim()">Reset</button>
 
-    function generateBandLotEntry(tick) {
-      const entry = {
-        EntryID: `BND${tick}_2024`,
-        BandLotID: `BND${tick}`,
-        MaterialDescription: "AutoGen Material",
-        InitialQuantity: Math.floor(Math.random() * 1000) + 100,
-        Unit: "Kgs",
-        RemainingQuantity: 0,
-        CountryOfOrigin: "CountryX",
-        BillOfLadingNumber: `BOL${tick}`,
-        DateOfEntry: new Date(Date.now() + tick * 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-        CalculatedExpiryDate: new Date(Date.now() + (tick * 14 + 365) * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-        DaysRemaining: 365 - (tick * 14),
-        CustomsDutyValue: Math.floor(Math.random() * 1000000),
-        Status: "In Bonded Warehouse"
-      };
-      entry.RemainingQuantity = entry.InitialQuantity;
-      return entry;
-    }
+<div id="simulation"></div>
 
-    function startSim() {
-      simInterval = setInterval(() => {
-        if (currentTick >= maxTicks) {
-          clearInterval(simInterval);
-          return;
-        }
+<script>
+let simInterval;
+let currentTick = 0;
+const maxTicks = 39; // 1.5 years = 78 weeks / 2 weeks per second
 
-        const entry = generateBandLotEntry(currentTick);
-        const container = document.getElementById("simulation");
+// Replace this with your actual Web App URL after deploying Google Apps Script
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxfcCJFl29-kkxDaBJgnJL7QzOuC2UrIfwGNbqQNpp06d4PGH__XxPOHkpT1wyKbeCC/exec";
 
-        const div = document.createElement("div");
-        div.className = "entry" + (entry.DaysRemaining <= 30 ? " expired" : "");
-        div.innerHTML = `
-          <strong>${entry.BandLotID}</strong><br>
-          Material: ${entry.MaterialDescription}<br>
-          Quantity: ${entry.InitialQuantity} ${entry.Unit}<br>
-          Days Remaining: ${entry.DaysRemaining}
-        `;
-        container.appendChild(div);
+function generateBandLotEntry(tick) {
+  const entryDate = new Date(Date.now() + tick * 14 * 24 * 60 * 60 * 1000);
+  const expiryDate = new Date(entryDate);
+  expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
-        fetch("https://script.google.com/macros/s/AKfycbw5sO19MLnVtPHf-IekryBzcxsaoLE8kGhHbTrluRH_ErqPXjd9c_-v5vYDJmqhiWM0/exec", {
-          
-          method: "POST",
-          body: JSON.stringify(entry),
-          headers: {
-            "Content-Type": "application/json"
-          }
-        });
+  const entry = {
+    EntryID: `BND${tick}_2024`,
+    BandLotID: `BND${tick}`,
+    MaterialDescription: "AutoGen Material - Sodium Sulphate",
+    InitialQuantity: Math.floor(Math.random() * 900) + 100,
+    Unit: "Kgs",
+    RemainingQuantity: 0,
+    CountryOfOrigin: "CountryX",
+    BillOfLadingNumber: `BOL${tick}`,
+    DateOfEntry: entryDate.toISOString().split("T")[0],
+    CalculatedExpiryDate: expiryDate.toISOString().split("T")[0],
+    DaysRemaining: Math.round((expiryDate - new Date()) / (1000 * 60 * 60 * 24)),
+    CustomsDutyValue: Math.floor(Math.random() * 1000000),
+    Status: "In Bonded Warehouse"
+  };
 
-        currentTick++;
-      }, 1000);
-    }
+  entry.RemainingQuantity = entry.InitialQuantity;
+  return entry;
+}
 
-    function pauseSim() {
+function postEntryToSheet(entry) {
+  fetch(SCRIPT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(entry)
+  })
+  .then(response => response.text())
+  .then(result => console.log("✅ Entry posted:", result))
+  .catch(error => console.error("❌ Fetch error:", error));
+}
+
+function startSim() {
+  simInterval = setInterval(() => {
+    if (currentTick >= maxTicks) {
       clearInterval(simInterval);
+      console.log("✅ Simulation complete.");
+      return;
     }
 
-    function resetSim() {
-      pauseSim();
-      currentTick = 0;
-      document.getElementById("simulation").innerHTML = "";
-    }
-  </script>
+    const entry = generateBandLotEntry(currentTick);
+    displayEntry(entry);
+    postEntryToSheet(entry);
+    currentTick++;
+  }, 1000);
+}
+
+function pauseSim() {
+  clearInterval(simInterval);
+  console.log("⏸️ Simulation paused.");
+}
+
+function resetSim() {
+  pauseSim();
+  currentTick = 0;
+  document.getElementById("simulation").innerHTML = "";
+  console.log("🔄 Simulation reset.");
+}
+
+function displayEntry(entry) {
+  const container = document.getElementById("simulation");
+  const div = document.createElement("div");
+  div.className = "entry" + (entry.DaysRemaining <= 30 ? " expired" : "");
+  div.innerHTML = `
+    <strong>${entry.BandLotID}</strong><br>
+    Material: ${entry.MaterialDescription}<br>
+    Quantity: ${entry.InitialQuantity} ${entry.Unit}<br>
+    Days Remaining: ${entry.DaysRemaining}<br>
+    Status: ${entry.Status}
+  `;
+  container.appendChild(div);
+}
+</script>
+
 </body>
 </html>
